@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <time.h>
+#include <omp.h>
 
 #define N 7
 #define M 7
@@ -75,7 +76,7 @@ int proximo_movimento_x(int x, int movimento){
         return x - 2;
 }
 
-//Kernel do código
+//Kernel do código ==================PARALELIZADA================
 int passeio_cavalo(int tabuleiro[N][M], int x, int y, int jogada){
     int x2, y2, i;
     if (jogada == N*M)
@@ -94,6 +95,7 @@ int passeio_cavalo(int tabuleiro[N][M], int x, int y, int jogada){
 
     return 0;
 }
+//==================================PARALELIZADA================
 
 int main(){
     int i, j;
@@ -104,11 +106,11 @@ int main(){
     start = clock();
     
     printf("Resolvendo para N=%d e M=%d\n",N,M);
-
     //Zera o Tabuleiro
     for (i=0; i < N; i++)
         for (j=0; j < M; j++)
             tabuleiro[i][j] = 0;
+
     //Seta a posição inicial do cavalo
     tabuleiro[x_inicio][y_inicio] = 1;
 
@@ -117,6 +119,7 @@ int main(){
         print_tabuleiro(tabuleiro);
     else
         printf("Nao existe solucao\n");
+
     //Calcula o tempo total de execução
     end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;

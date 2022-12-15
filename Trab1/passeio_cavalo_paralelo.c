@@ -2,10 +2,10 @@
 #include <time.h>
 #include <omp.h>
 #include <stdlib.h>
+#include <string.h>
 
-#define N 7
-#define M 7
-
+#define N 6
+#define M 6
 void print_tabuleiro(int tabuleiro[N][M]){
     int i, j;
     for (i=0; i < N; i++){
@@ -78,26 +78,6 @@ int proximo_movimento_x(int x, int movimento){
 }
 
 //Kernel do código ==================PARALELIZADA================
-void passeio_cavalo(int tabuleiro[N][M], int x, int y){
-    int x2, y2, i;
-
-    omp_set_dynamic(0);
-    #pragma omp parallel for shared(tabuleiro)
-    for (i=1;i<9;i++){
-        x2 = proximo_movimento_x(x,i);
-        y2 = proximo_movimento_y(y,i);
-        if (jogada_valida(x2,y2, tabuleiro)){
-            tabuleiro[x2][y2] = 2;
-            int final = busca_passeio_cavalo(tabuleiro, x2,y2, 2);
-            if(final)
-                exit(1);
-            tabuleiro[x2][y2] = 0;
-        }
-    }
-}
-
-
-
 int busca_passeio_cavalo(int tabuleiro[N][M], int x, int y, int jogada){
     int x2, y2, i;
 
@@ -116,6 +96,26 @@ int busca_passeio_cavalo(int tabuleiro[N][M], int x, int y, int jogada){
     }
 
     return 0;
+}
+
+void passeio_cavalo(int tabuleiro[N][M], int x, int y, unsigned short *result){
+    int x2, y2, i;
+    int tab_aux[N][M];
+    memcpy(tab_aux, tabuleiro, (sizeof(int)*N*M));
+
+    omp_set_dynamic(0);
+    #pragma omp parallel for schedule(static,1) firstprivate(tab_aux)
+    for (i=1;i<9;i++){
+        x2 = proximo_movimento_x(x,i);
+        y2 = proximo_movimento_y(y,i);
+        if (jogada_valida(x2,y2, tab_aux)){
+            tab_aux[x2][y2] = 2;
+            if(busca_passeio_cavalo(tab_aux, x2,y2, 2))
+                memcpy(tabuleiro, tab_aux, (sizeof(int)*N*M));
+                *result = 1;
+            tab_aux[x2][y2] = 0;
+        }
+    }
 }
 //==================================PARALELIZADA================
 
@@ -137,9 +137,13 @@ int main(){
     tabuleiro[x_inicio][y_inicio] = 1;
 
     //Chama parte principal do código
-    passeio_cavalo(tabuleiro, x_inicio, y_inicio);  
-    print_tabuleiro(tabuleiro);
-
+    unsigned short result = 0;
+    passeio_cavalo(tabuleiro, x_inicio, y_inicio, &result);  
+    
+    if(result)
+        print_tabuleiro(tabuleiro);
+    else
+        printf("Nenhuma solução possível\n");
 
     //Calcula o tempo total de execução
     end = clock();

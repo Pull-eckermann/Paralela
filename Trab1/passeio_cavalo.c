@@ -103,7 +103,7 @@ int main(){
     double cpu_time_used;
     start = clock();
     
-    printf("Resolvendo para N=%d e M=%d\n",N,M);
+    printf("Resolvendo para N=%d e M=%d com implementacao SEQUENCIAL\n",N,M);
 
     //Zera o Tabuleiro
     for (i=0; i < N; i++)

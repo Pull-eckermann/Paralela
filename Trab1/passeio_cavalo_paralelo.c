@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <omp.h>
+#include <stdlib.h>
 
 #define N 7
 #define M 7
@@ -77,8 +78,29 @@ int proximo_movimento_x(int x, int movimento){
 }
 
 //Kernel do código ==================PARALELIZADA================
-int passeio_cavalo(int tabuleiro[N][M], int x, int y, int jogada){
+void passeio_cavalo(int tabuleiro[N][M], int x, int y){
     int x2, y2, i;
+
+    omp_set_dynamic(0);
+    #pragma omp parallel for shared(tabuleiro)
+    for (i=1;i<9;i++){
+        x2 = proximo_movimento_x(x,i);
+        y2 = proximo_movimento_y(y,i);
+        if (jogada_valida(x2,y2, tabuleiro)){
+            tabuleiro[x2][y2] = 2;
+            int final = busca_passeio_cavalo(tabuleiro, x2,y2, 2);
+            if(final)
+                exit(1);
+            tabuleiro[x2][y2] = 0;
+        }
+    }
+}
+
+
+
+int busca_passeio_cavalo(int tabuleiro[N][M], int x, int y, int jogada){
+    int x2, y2, i;
+
     if (jogada == N*M)
         return 1;
 
@@ -87,8 +109,8 @@ int passeio_cavalo(int tabuleiro[N][M], int x, int y, int jogada){
         y2 = proximo_movimento_y(y,i);
         if (jogada_valida(x2,y2, tabuleiro)){
             tabuleiro[x2][y2] = jogada+1;
-            if (passeio_cavalo(tabuleiro, x2,y2, jogada+1))
-                return 1;
+            if(busca_passeio_cavalo(tabuleiro, x2,y2, jogada+1))
+                return  1;
             tabuleiro[x2][y2] = 0;
         }
     }
@@ -105,7 +127,7 @@ int main(){
     double cpu_time_used;
     start = clock();
     
-    printf("Resolvendo para N=%d e M=%d\n",N,M);
+    printf("Resolvendo para N=%d e M=%d com implementacao PARALELA\n",N,M);
     //Zera o Tabuleiro
     for (i=0; i < N; i++)
         for (j=0; j < M; j++)
@@ -115,10 +137,9 @@ int main(){
     tabuleiro[x_inicio][y_inicio] = 1;
 
     //Chama parte principal do código
-    if (passeio_cavalo(tabuleiro, x_inicio, y_inicio, 1))
-        print_tabuleiro(tabuleiro);
-    else
-        printf("Nao existe solucao\n");
+    passeio_cavalo(tabuleiro, x_inicio, y_inicio);  
+    print_tabuleiro(tabuleiro);
+
 
     //Calcula o tempo total de execução
     end = clock();

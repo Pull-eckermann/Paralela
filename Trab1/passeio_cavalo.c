@@ -103,7 +103,7 @@ int main(){
     double cpu_time_used;
     start = clock();
     
-    printf("Resolvendo para N=%d e M=%d com implementacao SEQUENCIAL\n",N,M);
+    //printf("Resolvendo para N=%d e M=%d com implementacao SEQUENCIAL\n",N,M);
 
     //Zera o Tabuleiro
     for (i=0; i < N; i++)
@@ -112,13 +112,14 @@ int main(){
     //Seta a posição inicial do cavalo
     tabuleiro[x_inicio][y_inicio] = 1;
 
+    passeio_cavalo(tabuleiro, x_inicio, y_inicio, 1);
     //Chama parte principal do código
-    if (passeio_cavalo(tabuleiro, x_inicio, y_inicio, 1))
+    /*if (passeio_cavalo(tabuleiro, x_inicio, y_inicio, 1))
         print_tabuleiro(tabuleiro);
     else
-        printf("Nao existe solucao\n");
+        printf("Nao existe solucao\n");*/
     //Calcula o tempo total de execução
     end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-    printf("%f seconds\n",cpu_time_used);
+    printf("%f\n",cpu_time_used);
 }

@@ -23,39 +23,6 @@ int jogada_valida(int x, int y, int tabuleiro[N][M]){
     return 1;
 }
 
-/* Possiveis movimentos
-#1
-x2 = x + 1;
-y2 = y + 2;
-
-#2
-x2 = x + 1;
-y2 = y - 2;
-
-#3
-x2 = x - 1;
-y2 = y + 2;
-
-#4
-x2 = x - 1;
-y2 = y - 2;
-
-#5
-x2 = x + 2;
-y2 = y + 1;
-
-#6
-x2 = x + 2;
-y2 = y - 1;
-
-#7
-x2 = x - 2;
-y2 = y + 1;
-
-#8
-x2 = x - 2;
-y2 = y - 1;
-*/
 int proximo_movimento_y(int y, int movimento){
     int valor = 1;
     if( movimento < 5 )
@@ -98,21 +65,27 @@ int busca_passeio_cavalo(int tabuleiro[N][M], int x, int y, int jogada){
     return 0;
 }
 
-void passeio_cavalo(int tabuleiro[N][M], int x, int y, unsigned short *result){
+void passeio_cavalo(int tabuleiro[N][M], int x, int y, unsigned short *result, clock_t start){
     int x2, y2, i;
-    int tab_aux[N][M];
-    memcpy(tab_aux, tabuleiro, (sizeof(int)*N*M));
 
     omp_set_dynamic(0);
-    #pragma omp parallel for schedule(static,1) firstprivate(tab_aux)
+    #pragma omp parallel for schedule(static,1)
     for (i=1;i<9;i++){
+        int tab_aux[N][M];
+        memcpy(tab_aux, tabuleiro, (sizeof(int)*N*M));
         x2 = proximo_movimento_x(x,i);
         y2 = proximo_movimento_y(y,i);
         if (jogada_valida(x2,y2, tab_aux)){
             tab_aux[x2][y2] = 2;
-            if(busca_passeio_cavalo(tab_aux, x2,y2, 2))
+            if(busca_passeio_cavalo(tab_aux, x2,y2, 2)){
                 memcpy(tabuleiro, tab_aux, (sizeof(int)*N*M));
                 *result = 1;
+                print_tabuleiro(tabuleiro);
+                clock_t end = clock();
+                double cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+                printf("%f\n",cpu_time_used);
+                exit(1);
+            }
             tab_aux[x2][y2] = 0;
         }
     }
@@ -127,7 +100,7 @@ int main(){
     double cpu_time_used;
     start = clock();
     
-    printf("Resolvendo para N=%d e M=%d com implementacao PARALELA\n",N,M);
+    //printf("Resolvendo para N=%d e M=%d com implementacao PARALELA\n",N,M);
     //Zera o Tabuleiro
     for (i=0; i < N; i++)
         for (j=0; j < M; j++)
@@ -138,15 +111,16 @@ int main(){
 
     //Chama parte principal do código
     unsigned short result = 0;
-    passeio_cavalo(tabuleiro, x_inicio, y_inicio, &result);  
+    passeio_cavalo(tabuleiro, x_inicio, y_inicio, &result, start);  
     
-    if(result)
+    /*if(result)
         print_tabuleiro(tabuleiro);
     else
-        printf("Nenhuma solução possível\n");
+        printf("Nenhuma solução possível\n");*/
 
     //Calcula o tempo total de execução
     end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-    printf("%f seconds\n",cpu_time_used);
+
+    printf("%f\n",cpu_time_used);
 }

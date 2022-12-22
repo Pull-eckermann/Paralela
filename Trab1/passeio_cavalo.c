@@ -99,27 +99,33 @@ int main(){
     int i, j;
     int tabuleiro[N][M];
     int x_inicio = 0, y_inicio = 0;
-    clock_t start, end;     //Variáveis para contar o tempo de execução
-    double cpu_time_used;
+    clock_t start, start2, end;     //Variáveis para contar o tempo de execução
+    double cpu_time_used, cpu_time_used2;
     start = clock();
     
-    //printf("Resolvendo para N=%d e M=%d com implementacao SEQUENCIAL\n",N,M);
+    printf("Resolvendo para N=%d e M=%d com implementacao SEQUENCIAL\n",N,M);
 
-    //Zera o Tabuleiro
+    //Zera o Tabuleiro - Paralelizar gera muito overhead
     for (i=0; i < N; i++)
         for (j=0; j < M; j++)
             tabuleiro[i][j] = 0;
     //Seta a posição inicial do cavalo
     tabuleiro[x_inicio][y_inicio] = 1;
 
-    passeio_cavalo(tabuleiro, x_inicio, y_inicio, 1);
     //Chama parte principal do código
-    /*if (passeio_cavalo(tabuleiro, x_inicio, y_inicio, 1))
-        print_tabuleiro(tabuleiro);
-    else
-        printf("Nao existe solucao\n");*/
+    end = clock();
+    cpu_time_used2 = ((double) (end - start)) / CLOCKS_PER_SEC;
+    printf("%f\n",cpu_time_used2);
+    
+    passeio_cavalo(tabuleiro, x_inicio, y_inicio, 1);
+    
+    start2 = clock();
+    print_tabuleiro(tabuleiro);
+
     //Calcula o tempo total de execução
     end = clock();
+    cpu_time_used2 += ((double) (end - start2)) / CLOCKS_PER_SEC;
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
     printf("%f\n",cpu_time_used);
+    printf("%f\n",cpu_time_used2);
 }

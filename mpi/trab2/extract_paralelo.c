@@ -35,6 +35,7 @@ int main(int argc, char **argv){
 
     int tam_serie = atoi(argv[2]);
     int tam_janela = atoi(argv[3]);
+    printf("tamanho da serie: %d, tamanho da janela: %d\n",tam_serie, tam_janela);
 
     //Começo Região paralelizável - Kernel
     MPI_Init(&argc, &argv);
@@ -46,12 +47,11 @@ int main(int argc, char **argv){
 
     double max, min, media;
     if(rank == 0){
+        //Instancia o vetor principal e printa sua parte
         double *serie = (double *) malloc(sizeof(double)*tam_serie);
         read_serie(argv[1], serie, tam_serie);
-        printf("tamanho da serie: %d, tamanho da janela: %d\n",tam_serie, tam_janela);
         max_min_avg(serie,tam_serie, &max, &min, &media);
         printf("serie total - max: %lf, min: %lf, media: %lf\n", max, min, media);
-        int dest = 0;
         for(int i = 0; i <= tam_serie - tam_janela; i++){
             double *janela = (double *) malloc(sizeof(double)*tam_janela);
             int aux = i;
@@ -59,14 +59,22 @@ int main(int argc, char **argv){
                 janela[j] = serie[aux];
                 aux++;
             }
-            dest++;
-            if(dest >= num_proc)
-                dest = 1;
-            MPI_Send(janela, tam_janela, MPI_DOUBLE, dest, 0, MPI_COMM_WORLD);
+            int rdest = 0;
+            MPI_Recv(&rdest, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            if(rdest > 0)
+                MPI_Send(janela, tam_janela, MPI_DOUBLE, rdest, 0, MPI_COMM_WORLD);
         }
+        for(int j = 0; j < tam_janela; j++){
+            janela[j] = -1;
+        }
+        for(int i = 1; i < num_proc; i++)
+            MPI_Send(janela, tam_janela, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
     }else{
         while(1){
+            MPI_Send(&rank, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
             double *janela = (double *) malloc(sizeof(double)*tam_janela);
+            if(janela é tudo -1)
+                break;
             MPI_Recv(janela, tam_janela, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             max_min_avg(janela,tam_janela, &max, &min, &media);
             printf("janela %d - max: %lf, min: %lf, media: %lf\n", rank, max, min, media);

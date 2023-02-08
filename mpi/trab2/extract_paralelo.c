@@ -69,17 +69,19 @@ int main(int argc, char **argv){
         for(int j = 0; j < tam_janela; j++){
             janela[j] = 0;
         }
-        janela[tam_janela] = -1; //Indica qual janela é
+        janela[tam_janela] = -1.0; //Indica qual janela é
         for(int i = 1; i < num_proc; i++)
-            MPI_Send(janela, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
+            MPI_Send(janela, (tam_janela +1), MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
         free(janela);
     }else{
         while(1){
             MPI_Send(&rank, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-            double *janela = (double *) malloc(sizeof(double)*tam_janela);
+            double *janela = (double *) malloc((sizeof(double)*tam_janela) + 1);
             MPI_Recv(janela, (tam_janela + 1), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            if(janela[tam_janela] == -1.0)
+            if((int) janela[tam_janela] == -1){
+                free(janela);
                 break;
+            }
             max_min_avg(janela,tam_janela, &max, &min, &media);
             printf("janela %d - max: %lf, min: %lf, media: %lf\n", (int) janela[tam_janela], max, min, media);
             free(janela);

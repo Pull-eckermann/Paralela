@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 void read_serie(char * arquivo, double *vetor, int tamanho){
     FILE *fp = fopen(arquivo, "r");
@@ -31,8 +32,14 @@ int main(int argc, char **argv){
         return 1;
     }
 
+    clock_t start, end;     //Variáveis para contar o tempo de execução
+    double cpu_time_used;
+    start = clock();
+
     int tam_serie = atoi(argv[2]);
     int tam_janela = atoi(argv[3]);
+    
+    //Inicio da região paralelizável
     double *serie = (double *) malloc(sizeof(double)*tam_serie);
     read_serie(argv[1], serie, tam_serie);
     printf("tamanho da serie: %d, tamanho da janela: %d\n",tam_serie, tam_janela);
@@ -43,4 +50,11 @@ int main(int argc, char **argv){
         max_min_avg(&serie[i],tam_janela, &max, &min, &media);
         printf("janela %d - max: %lf, min: %lf, media: %lf\n", i, max, min, media);
     }
+    //Fim da região paralelizável
+
+    end = clock();
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+    printf("Time: %f \n",cpu_time_used);
+
+    return 0;
 }

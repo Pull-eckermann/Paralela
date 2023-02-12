@@ -32,62 +32,64 @@ int main(int argc, char **argv){
         fprintf(stderr, "necessário 2 argumentos: %s <arquivo time series> <tamanho time series> <tamanho janela>\n", argv[0]);
         return 1;
     }
+    clock_t start, end;     //Variáveis para contar o tempo de execução
+    double cpu_time_used;
+    start = clock();
+
+    //Começo Região paralelizável - Kernel
+    MPI_Init(&argc, &argv);
 
     int tam_serie = atoi(argv[2]);
     int tam_janela = atoi(argv[3]);
 
-    //Começo Região paralelizável - Kernel
-    MPI_Init(&argc, &argv);
     int num_proc;
     MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
     
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    double *serie = (double *) malloc(sizeof(double)*tam_serie);
+    read_serie(argv[1], serie, tam_serie);
+
     double max, min, media;
     if(rank == 0){
         //Instancia o vetor principal e printa sua parte
-        printf("tamanho da serie: %d, tamanho da janela: %d\n",tam_serie, tam_janela);
-        double *serie = (double *) malloc(sizeof(double)*tam_serie);
-        read_serie(argv[1], serie, tam_serie);
+        fprintf(stdout,"tamanho da serie: %d, tamanho da janela: %d\n",tam_serie, tam_janela);
         max_min_avg(serie,tam_serie, &max, &min, &media);
-        printf("serie total - max: %lf, min: %lf, media: %lf\n", max, min, media);
-        free(serie);
-        double *janela = (double *) malloc((sizeof(double)*tam_janela) + 1);
+        fprintf(stdout,"serie total - max: %lf, min: %lf, media: %lf\n", max, min, media);
         for(int i = 0; i <= tam_serie - tam_janela; i++){
-            int aux = i;
-            for(int j = 0; j < tam_janela; j++){
-                janela[j] = serie[aux];
-                aux++;
-            }
-            janela[tam_janela] = i; //Indica qual janela é
             int rdest = 0;
             MPI_Recv(&rdest, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             if(rdest > 0)
-                MPI_Send(janela, (tam_janela +1), MPI_DOUBLE, rdest, 0, MPI_COMM_WORLD);
+                MPI_Send(&i, 1, MPI_INT, rdest, 0, MPI_COMM_WORLD);
         }
-        for(int j = 0; j < tam_janela; j++){
-            janela[j] = 0;
-        }
-        janela[tam_janela] = -1.0; //Indica qual janela é
+        int final = -1;
         for(int i = 1; i < num_proc; i++)
-            MPI_Send(janela, (tam_janela +1), MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
-        free(janela);
+            MPI_Send(&final, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+        free(serie);
     }else{
         while(1){
             MPI_Send(&rank, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-            double *janela = (double *) malloc((sizeof(double)*tam_janela) + 1);
-            MPI_Recv(janela, (tam_janela + 1), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            if((int) janela[tam_janela] == -1){
-                free(janela);
+            int i = 0;
+            MPI_Recv(&i, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            if(i == -1){
+                free(serie);
                 break;
             }
-            max_min_avg(janela,tam_janela, &max, &min, &media);
-            printf("janela %d - max: %lf, min: %lf, media: %lf\n", (int) janela[tam_janela], max, min, media);
-            free(janela);
+            max_min_avg(&serie[i],tam_janela, &max, &min, &media);
+            fprintf(stdout,"janela %d - max: %lf, min: %lf, media: %lf\n", i, max, min, media);
         }
     }
     //Fim da região paralelizável
+
+    MPI_Barrier(MPI_COMM_WORLD); //Espera todos os processos encerrarem
+    //Printa o tempo de execução
+    if(rank == 0){
+        end = clock();
+        cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+        fprintf(stdout,"Time: %f \n",cpu_time_used);
+    }
     MPI_Finalize();
+
     return 0;
 }

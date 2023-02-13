@@ -48,31 +48,37 @@ int main(int argc, char **argv){
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    //Todos os processos armazenam uma cópia da série completa
     double *serie = (double *) malloc(sizeof(double)*tam_serie);
     read_serie(argv[1], serie, tam_serie);
 
     double max, min, media;
-    if(rank == 0){
+    if(rank == 0){ //Produtor
         //Instancia o vetor principal e printa sua parte
         fprintf(stdout,"tamanho da serie: %d, tamanho da janela: %d\n",tam_serie, tam_janela);
         max_min_avg(serie,tam_serie, &max, &min, &media);
         fprintf(stdout,"serie total - max: %lf, min: %lf, media: %lf\n", max, min, media);
         for(int i = 0; i <= tam_serie - tam_janela; i++){
             int rdest = 0;
+            //Recebe sinal de um processo que está pronto, informando o rank desse processo
             MPI_Recv(&rdest, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             if(rdest > 0)
+                // Envia o índice da janela ao processo que sinalizou estar pronto
                 MPI_Send(&i, 1, MPI_INT, rdest, 0, MPI_COMM_WORLD);
         }
         int final = -1;
+        //Informa aos processos que encerrou
         for(int i = 1; i < num_proc; i++)
             MPI_Send(&final, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
         free(serie);
     }else{
-        while(1){
+        while(1){ //Consumidor
+            //Envia informando o rank e sinaliza que está livre
             MPI_Send(&rank, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
             int i = 0;
+            //Recebe indice inicial da janela
             MPI_Recv(&i, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            if(i == -1){
+            if(i == -1){ //Quando receber -1 é o processo 0 informando que encerrou
                 free(serie);
                 break;
             }
@@ -87,7 +93,7 @@ int main(int argc, char **argv){
     if(rank == 0){
         end = clock();
         cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-        fprintf(stdout,"Time: %f \n",cpu_time_used);
+        fprintf(stdout,"Time#%f#\n",cpu_time_used);
     }
     MPI_Finalize();
 

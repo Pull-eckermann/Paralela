@@ -46,15 +46,21 @@ int main(int argc, char **argv){
     double max, min, media;
     max_min_avg(serie,tam_serie, &max, &min, &media);
     printf("serie total - max: %lf, min: %lf, media: %lf\n", max, min, media);
-    for(int i = 0; i <= tam_serie - tam_janela; i++){
+    
+    ////Medindo tempo sequencial
+    //end = clock();
+    //cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+    //printf("TimeS#%f#\n",cpu_time_used);
+
+    for(int i = 0; i <= tam_serie - tam_janela; i++){ //Parte principal paralelizável
         max_min_avg(&serie[i],tam_janela, &max, &min, &media);
         printf("janela %d - max: %lf, min: %lf, media: %lf\n", i, max, min, media);
     }
     //Fim da região paralelizável
-
+    //Medindo tempo total
     end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-    printf("Time#%f#\n",cpu_time_used);
+    printf("TimeT#%f#\n",cpu_time_used);
 
     return 0;
 }
